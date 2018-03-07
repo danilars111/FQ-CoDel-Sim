@@ -5,7 +5,7 @@ FLOWS = 2
 class flowGenerator(sim.Component):
     def process(self,fid):
         while True:
-            flow(name='flow' + str(fid), fid=fid)
+            flow(name='flow-' + str(fid), fid=fid)
             yield self.hold(sim.Uniform(5,15).sample())
 
 
