@@ -1,18 +1,21 @@
 import salabim as sim
+import random
 
 FLOWS = 2
+MSS = 1500 * 8
+QUANTUM = MSS + (14 * 8)
 
 class flowGenerator(sim.Component):
     def process(self,fid):
         while True:
-            flow(name='flow-' + str(fid), fid=fid)
+            flow(name='flow-' + str(fid), fid=fid, size = random.uniform(1/MSS,1))
             yield self.hold(sim.Uniform(5,15).sample())
 
 
 class flow(sim.Component):
-    def setup(self, fid):
+    def setup(self, fid, size):
         self.fid = fid
-        self.packetSize = 1500 * 8
+        self.packetSize = round(size * MSS,0) - (round(size * MSS,0) % 8)
 
     def process(self):
         for i in range(len(newQueues)):
@@ -38,7 +41,7 @@ class flow(sim.Component):
 class queue(sim.Component):
     def setup(self):
         self.queue = sim.Queue()
-        self.credits = 0
+        self.credits = QUANTUM
         self.new = True
         self.qid = -1
 
@@ -50,6 +53,8 @@ class queue(sim.Component):
     def push(self, component):
         component.enter(self.queue)
 
+    def resetCredits(self):
+        self.credits = QUANTUM
 
 class scheduler(sim.Component):
     def process(self):
@@ -59,8 +64,16 @@ class scheduler(sim.Component):
         while True:
             if newQueues and not old:
                 queue = newQueues[0].queue
-                clerk.activate(queue=queue)
-                yield self.passivate()
+                
+                while newQueues[0].credits > 0 and queue:
+                    newQueues[0].credits -= queue[0].packetSize
+                    print("credits =",newQueues[0].credits/8, "fid:", newQueues[0].qid)
+                    clerk.activate(queue=queue)
+                    yield self.passivate()
+                
+                if newQueues[0].credits <= 0:
+                    newQueues[0].credits += QUANTUM
+                    
                 newQueues[0].move(newQueues, oldQueues)
                  
             elif oldQueues:
@@ -69,11 +82,21 @@ class scheduler(sim.Component):
                 old = True
                 counter += 1
                 if queue:
-                    clerk.activate(queue=queue)
-                    yield self.passivate()
+                    while oldQueues[0].credits > 0 and queue:
+                        oldQueues[0].credits -= queue[0].packetSize
+                        print("credits =",oldQueues[0].credits/8), "fid:", oldQueues[0].qid
+                        clerk.activate(queue=queue)
+                        yield self.passivate()
+                        
+                    if oldQueues[0].credits <= 0:
+                        oldQueues[0].credits += QUANTUM
+                    
                     oldQueues[0].move(oldQueues, oldQueues)
                 else:
+                    oldQueues[0].resetCredits()
                     oldQueues[0].move(oldQueues, passiveQueues)
+                    old = False
+                    counter = 0
             
             elif not self.ispassive():
                yield self.passivate()
