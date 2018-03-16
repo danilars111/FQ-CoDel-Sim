@@ -1,10 +1,14 @@
 import salabim as sim
 import random
 
+UNCLAIMED = -1
 BANDWIDTH = 100.0 * pow(10,6)
 FLOWS = 1
 MSS = 1500.0 * 8
 QUANTUM = MSS + (14 * 8)
+
+
+
 
 class flowGenerator(sim.Component):
     def process(self,fid):
@@ -17,7 +21,7 @@ class flow(sim.Component):
     def setup(self, fid, size):
         self.fid = fid
         self.packetSize = round(size * MSS,0) - (round(size * MSS,0) % 8)
-
+        
     def process(self):
         for i in range(len(newQueues)):
             if newQueues[i].qid is self.fid:
@@ -29,22 +33,35 @@ class flow(sim.Component):
                 oldQueues[j].push(self)
                 yield self.cancel()
 
-        passiveQueues[0].push(self)
-        passiveQueues[0].qid = self.fid
-        passiveQueues[0].move(passiveQueues, newQueues)
-
-        if scheduler.ispassive():
-            scheduler.activate()
+        for k in range(len(passiveQueues)):
+            if passiveQueues[k].qid is self.fid:
+                passiveQueues[k].push(self)
+                passiveQueues[k].move(passiveQueues, newQueues)
+                
+                if scheduler.ispassive():
+                    scheduler.activate()
+                yield self.cancel()
         
+        for l in range(len(passiveQueues)):
+            if passiveQueues[l].qid is UNCLAIMED:
+                passiveQueues[l].push(self)
+                passiveQueues[l].qid = self.fid
+                passiveQueues[l].move(passiveQueues, newQueues)
+
+                if scheduler.ispassive():
+                    scheduler.activate()
+                yield self.cancel()
+
+        print("No available queues\n")
         yield self.cancel()
-
-
+        
 class queue(sim.Component):
     def setup(self):
         self.queue = sim.Queue()
         self.credits = QUANTUM
         self.new = True
-        self.qid = -1
+        self.qid = UNCLAIMED
+        self.sparseCounter = 0
 
     def move(self, source, destination):
         self.leave(source)
@@ -57,7 +74,14 @@ class queue(sim.Component):
     def resetCredits(self):
         self.credits = QUANTUM
 
+    def sparseIncrease(self):
+        if self.qid is not UNCLAIMED:
+            self.sparseCounter += 1
+
 class scheduler(sim.Component):
+    def setup(self):
+        self.RRCounter = 0
+
     def process(self):
         old = False 
         counter = 0
@@ -103,15 +127,21 @@ class scheduler(sim.Component):
                     oldQueues[0].move(oldQueues, passiveQueues)
                     old = False
                     counter = 0
+                    self.RRCounter += 1
+                    for i in range(len(passiveQueues)):
+                        passiveQueues[i].sparseIncrease()
+
             
             elif not self.ispassive():
                yield self.passivate()
 
-            print(old)
+            
             if counter is len(oldQueues) and old:
                 print("counter reset")
                 old = False
                 counter = 0
+                for i in range(len(passiveQueues)):
+                    passiveQueues[i].sparseIncrease()
 
 
 
