@@ -1,15 +1,16 @@
 import salabim as sim
 import random
 
-FLOWS = 2
-MSS = 1500 * 8
+BANDWIDTH = 100.0 * pow(10,6)
+FLOWS = 1
+MSS = 1500.0 * 8
 QUANTUM = MSS + (14 * 8)
 
 class flowGenerator(sim.Component):
     def process(self,fid):
         while True:
             flow(name='flow-' + str(fid), fid=fid, size = random.uniform(1/MSS,1))
-            yield self.hold(sim.Uniform(5,15).sample())
+            yield self.hold(sim.Exponential(MSS/(2 * BANDWIDTH)).sample())
 
 
 class flow(sim.Component):
@@ -66,9 +67,12 @@ class scheduler(sim.Component):
                 queue = newQueues[0].queue
                 
                 while newQueues[0].credits > 0 and queue:
+                    print("Block size", newQueues[0].queue[0].packetSize/8)
+
                     newQueues[0].credits -= queue[0].packetSize
                     print("credits =",newQueues[0].credits/8, "fid:", newQueues[0].qid)
-                    clerk.activate(queue=queue)
+                    
+                    clerk.activate(queue=queue, size=queue[0].packetSize)
                     yield self.passivate()
                 
                 if newQueues[0].credits <= 0:
@@ -83,9 +87,11 @@ class scheduler(sim.Component):
                 counter += 1
                 if queue:
                     while oldQueues[0].credits > 0 and queue:
+                        
+                        print("Block size", oldQueues[0].queue[0].packetSize/8)
                         oldQueues[0].credits -= queue[0].packetSize
                         print("credits =",oldQueues[0].credits/8), "fid:", oldQueues[0].qid
-                        clerk.activate(queue=queue)
+                        clerk.activate(queue=queue, size=queue[0].packetSize)
                         yield self.passivate()
                         
                     if oldQueues[0].credits <= 0:
@@ -111,10 +117,10 @@ class scheduler(sim.Component):
 
 
 class clerk(sim.Component):
-    def process(self, queue):
+    def process(self, queue, size):
         while True:
             queue.pop()
-            yield self.hold(10)
+            yield self.hold(size/BANDWIDTH)
             scheduler.activate()
             yield self.cancel()
 
