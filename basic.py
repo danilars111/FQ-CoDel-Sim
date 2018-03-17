@@ -6,7 +6,7 @@ BANDWIDTH = 100.0 * pow(10,6)
 FLOWS = 1
 MSS = 1500.0 * 8
 QUANTUM = MSS + (14 * 8)
-
+INTERARRIVAL = MSS/(2 * BANDWIDTH)
 
 
 
@@ -14,7 +14,7 @@ class flowGenerator(sim.Component):
     def process(self,fid):
         while True:
             flow(name='flow-' + str(fid), fid=fid, size = random.uniform(1/MSS,1))
-            yield self.hold(sim.Exponential(MSS/(2 * BANDWIDTH)).sample())
+            yield self.hold(sim.Exponential(1).sample())
 
 
 class flow(sim.Component):
@@ -140,6 +140,7 @@ class scheduler(sim.Component):
                 print("counter reset")
                 old = False
                 counter = 0
+                self.RRCounter += 1
                 for i in range(len(passiveQueues)):
                     passiveQueues[i].sparseIncrease()
 
@@ -175,3 +176,15 @@ oldQueues = sim.Queue('oldQueues')
 clerk = clerk(process=None)
 
 env.run(till=100)
+
+print("Scheduler RR", scheduler.RRCounter)
+
+for x in range(len(passiveQueues)):
+    print("Flow id:",passiveQueues[x].qid ,"Sparse counter:", passiveQueues[x].sparseCounter)
+
+for x in range(len(newQueues)):
+    print("Flow id:",newQueues[x].qid ,"Sparse counter:",newQueues[x].sparseCounter)
+
+for x in range(len(oldQueues)):
+    print("Flow id:",oldQueues[x].qid ,"Sparse counter:", oldQueues[x].sparseCounter)
+
