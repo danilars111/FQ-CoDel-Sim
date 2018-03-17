@@ -220,7 +220,7 @@ for _ in range(SPARSEFLOWS + BULKFLOWS + 1):
     queue().enter(passiveQueues)
 
 for i in range(0,2*SPARSEFLOWS,2):
-    sparseFlowGenerator(fid=i,interTime=time, distribution="uniform")
+    sparseFlowGenerator(fid=i,interTime=time*0.999, distribution="uniform")
 
 for i in range(1,2*BULKFLOWS,2):
     bulkFlowGenerator(fid=i,interTime=time/4,distribution="uniform")
@@ -234,7 +234,7 @@ oldQueues = sim.Queue('oldQueues')
 
 clerk = clerk(process=None)
 
-env.run(till=10)
+env.run(till=100)
 
 print("interarrival time:", time)
 
