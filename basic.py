@@ -3,19 +3,47 @@ import random
 
 UNCLAIMED = -1
 BANDWIDTH = 100.0 * pow(10,6)
-FLOWS = 1
+SPARSEFLOWS = 1
+BULKFLOWS = 1
 MSS = 1500.0 * 8
 QUANTUM = MSS + (14 * 8)
 INTERARRIVAL = MSS/(2 * BANDWIDTH)
 
 
 
-class flowGenerator(sim.Component):
-    def process(self,fid):
-        while True:
-            flow(name='flow-' + str(fid), fid=fid, size = random.uniform(1/MSS,1))
-            yield self.hold(sim.Exponential(1).sample())
+class sparseFlowGenerator(sim.Component):
+    def process(self,fid, interTime, distribution="uniform"):
+       
+        if distribution is "uniform":
+            while True:
+                flow(name='flow-' + str(fid), fid=fid, size = random.uniform(1/MSS,1))
+                yield self.hold(interTime)
 
+        elif distribution is "exponential":
+            while True:
+                flow(name='flow-' + str(fid), fid=fid, size = random.uniform(1/MSS,1))
+                yield self.hold(sim.Exponential(interTime).sample())
+        
+        else:
+            print("INVALID DISTRIBUTION")
+            yield self.cancel
+
+class bulkFlowGenerator(sim.Component):
+    def process(self,fid, interTime, distribution="uniform"):
+       
+        if distribution is "uniform":
+            while True:
+                flow(name='flow-' + str(fid), fid=fid, size=QUANTUM)
+                yield self.hold(interTime)
+
+        elif distribution is "exponential":
+            while True:
+                flow(name='flow-' + str(fid), fid=fid, size=QUANTUM)
+                yield self.hold(sim.Exponential(interTime).sample())
+        
+        else:
+            print("INVALID DISTRIBUTION")
+            yield self.cancel
 
 class flow(sim.Component):
     def setup(self, fid, size):
@@ -151,22 +179,28 @@ class clerk(sim.Component):
     def process(self, queue, size):
         while True:
             queue.pop()
-            yield self.hold(size/BANDWIDTH)
+            yield self.hold(0.5)
+#size/BANDWIDTH
             scheduler.activate()
             yield self.cancel()
 
 
-env = sim.Environment(trace=True)
+env = sim.Environment(trace=True, random_seed=None)
 
 scheduler = scheduler()
 
-for i in range(FLOWS):
-    flowGenerator(fid=i)
-
 passiveQueues = sim.Queue('passiveQueues')
 
-for _ in range(FLOWS):
+for _ in range(SPARSEFLOWS + BULKFLOWS + 1):
     queue().enter(passiveQueues)
+
+for i in range(0,2*SPARSEFLOWS,2):
+    sparseFlowGenerator(fid=i)
+
+for i in range(1,2*BULKFLOWS,2):
+    bulkFlowGenerator(fid=i)
+
+
 
 
 newQueues = sim.Queue('newQueues')
@@ -175,7 +209,7 @@ oldQueues = sim.Queue('oldQueues')
 
 clerk = clerk(process=None)
 
-env.run(till=100)
+env.run(till=500)
 
 print("Scheduler RR", scheduler.RRCounter)
 
