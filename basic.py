@@ -2,16 +2,15 @@ import salabim as sim
 import random
 
 UNCLAIMED = -1
-BANDWIDTH = 1.0 * pow(10,6)
-SPARSEFLOWS = 1
-BULKFLOWS = 4
+BANDWIDTH = input("Enter bandwidth (Mbps): ") * pow(10,6)
+SPARSEFLOWS = input("Enter number of sparseflows: ")
+BULKFLOWS = input("Enter number of bulkflows: ")
 MSS = 1500.0 * 8.0
 QUANTUM = MSS + (14.0 * 8.0)
-INTERARRIVAL = MSS/(2 * BANDWIDTH)
-
-
+INTERARRIVALMULTIPLIER = input("Enter interarrivaltime multiplier ")
+RUNTIME = input("Enter simulated runtime: ")
 def sparseCalc():
-    return ((QUANTUM*BULKFLOWS) + (SPARSEFLOWS*QUANTUM/3.0))/BANDWIDTH
+    return ((QUANTUM*BULKFLOWS) + (SPARSEFLOWS*QUANTUM/2.0))/BANDWIDTH
 
 
 class sparseFlowGenerator(sim.Component):
@@ -19,19 +18,20 @@ class sparseFlowGenerator(sim.Component):
        
         if distribution is "uniform":
             while True:
-                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/3)
+                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/2)
                         #random.uniform(1,QUANTUM/8) * 8)
                 yield self.hold(interTime)
 
         elif distribution is "exponential":
             while True:
-                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/3)
+                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/2)
                     #random.uniform(1, QUANTUM/8) * 8)
                 yield self.hold(sim.Exponential(interTime).sample())
         
         else:
             print("INVALID DISTRIBUTION")
             yield self.cancel
+
 
 class bulkFlowGenerator(sim.Component):
     def process(self,fid, interTime, distribution="uniform"):
@@ -50,14 +50,15 @@ class bulkFlowGenerator(sim.Component):
             print("INVALID DISTRIBUTION")
             yield self.cancel
 
+
 class flow(sim.Component):
     def setup(self, fid, size):
         self.fid = fid
         self.packetSize = size - (size % 8)
         
     def process(self):
-        if self.fid is 0:
-            print("Incoming Packet with size:", self.packetSize)
+        #if self.fid is 0:
+            #print("Incoming Packet with size:", self.packetSize)
 
         for i in range(len(newQueues)):
             if newQueues[i].qid is self.fid:
@@ -90,7 +91,8 @@ class flow(sim.Component):
 
         print("No available queues\n")
         yield self.cancel()
-        
+
+
 class queue(sim.Component):
     def setup(self):
         self.queue = sim.Queue()
@@ -102,8 +104,8 @@ class queue(sim.Component):
     def move(self, source, destination):
         self.leave(source)
         self.enter(destination)
-        if self.qid is 0:
-            print("Moving:", self.qid, "from", source, "to", destination, "length of queue", len(self.queue), "credits", self.credits)
+        #if self.qid is 0:
+            #print("Moving:", self.qid, "from", source, "to", destination, "length of queue", len(self.queue), "credits", self.credits)
     
     def push(self, component):
         component.enter(self.queue)
@@ -114,7 +116,9 @@ class queue(sim.Component):
     def sparseIncrease(self):
         if self.qid is not UNCLAIMED:
             self.sparseCounter += 1
-            print("increasing sparse for:", self.qid)
+            #print("increasing sparse for:", self.qid)
+
+
 class scheduler(sim.Component):
     def setup(self):
         self.RRCounter = 0.0
@@ -128,8 +132,8 @@ class scheduler(sim.Component):
                 queue = newQueues[0].queue
                 
                 while newQueues[0].credits > 0 and queue:
-                    if newQueues[0].qid is 0:
-                        print("Deducting", queue[0].packetSize, "credits")
+                    #if newQueues[0].qid is 0:
+                        #print("Deducting", queue[0].packetSize, "credits")
                    # print("Block size", newQueues[0].queue[0].packetSize/8)
 
                     newQueues[0].credits -= queue[0].packetSize
@@ -141,8 +145,8 @@ class scheduler(sim.Component):
                 if newQueues[0].credits <= 0:
                     newQueues[0].credits += QUANTUM
 
-                    if newQueues[0].qid is 0:
-                        print("Adding Quantum")
+                    #if newQueues[0].qid is 0:
+                        #print("Adding Quantum")
                     
                 newQueues[0].move(newQueues, oldQueues)
                  
@@ -153,8 +157,8 @@ class scheduler(sim.Component):
                 counter += 1
                 if queue:
                     while oldQueues[0].credits > 0 and queue:
-                        if oldQueues[0].qid is 0:
-                            print("Deducting", queue[0].packetSize, "credits")
+                        #if oldQueues[0].qid is 0:
+                            #print("Deducting", queue[0].packetSize, "credits")
                         
                        # print("Block size", oldQueues[0].queue[0].packetSize/8)
                         oldQueues[0].credits -= queue[0].packetSize
@@ -164,8 +168,8 @@ class scheduler(sim.Component):
                         
                     if oldQueues[0].credits <= 0:
                         oldQueues[0].credits += QUANTUM
-                        if oldQueues[0].qid is 0:
-                            print("Adding Quantum")
+                        #if oldQueues[0].qid is 0:
+                            #print("Adding Quantum")
                     
                     oldQueues[0].move(oldQueues, oldQueues)
                 else:
@@ -220,7 +224,7 @@ for _ in range(SPARSEFLOWS + BULKFLOWS + 1):
     queue().enter(passiveQueues)
 
 for i in range(0,2*SPARSEFLOWS,2):
-    sparseFlowGenerator(fid=i,interTime=time*0.999, distribution="uniform")
+    sparseFlowGenerator(fid=i,interTime=time*INTERARRIVALMULTIPLIER, distribution="uniform")
 
 for i in range(1,2*BULKFLOWS,2):
     bulkFlowGenerator(fid=i,interTime=time/4,distribution="uniform")
@@ -234,18 +238,18 @@ oldQueues = sim.Queue('oldQueues')
 
 clerk = clerk(process=None)
 
-env.run(till=100)
+env.run(till=RUNTIME)
 
 print("interarrival time:", time)
 
 print("Scheduler RR", scheduler.RRCounter)
 
 for x in range(len(passiveQueues)):
-    print("Flow id:",passiveQueues[x].qid ,"Sparse counter:", passiveQueues[x].sparseCounter, "% sparse",  passiveQueues[x].sparseCounter/scheduler.RRCounter)
+    print("Flow id:",passiveQueues[x].qid , "% sparse",  passiveQueues[x].sparseCounter/scheduler.RRCounter)
 
 for x in range(len(newQueues)):
-    print("Flow id:",newQueues[x].qid ,"Sparse counter:", newQueues[x].sparseCounter),"% sparse",  newQueues[x].sparseCounter/scheduler.RRCounter
+    print("Flow id:",newQueues[x].qid ,"% sparse",  newQueues[x].sparseCounter/scheduler.RRCounter)
 
 for x in range(len(oldQueues)):
-    print("Flow id:",oldQueues[x].qid ,"Sparse counter:", oldQueues[x].sparseCounter),"% sparse",  oldQueues[x].sparseCounter/scheduler.RRCounter
+    print("Flow id:",oldQueues[x].qid ,"% sparse",  oldQueues[x].sparseCounter/scheduler.RRCounter)
 
