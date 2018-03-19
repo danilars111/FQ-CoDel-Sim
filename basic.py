@@ -9,8 +9,9 @@ MSS = 1500.0 * 8.0
 QUANTUM = MSS + (14.0 * 8.0)
 INTERARRIVALMULTIPLIER = input("Enter interarrivaltime multiplier ")
 RUNTIME = input("Enter simulated runtime: ")
+
 def sparseCalc():
-    return ((QUANTUM*BULKFLOWS) + (SPARSEFLOWS*QUANTUM/2.0))/BANDWIDTH
+    return ((QUANTUM*(BULKFLOWS + 1)) + (SPARSEFLOWS*QUANTUM/2.0))/BANDWIDTH
 
 
 class sparseFlowGenerator(sim.Component):
@@ -18,13 +19,13 @@ class sparseFlowGenerator(sim.Component):
        
         if distribution is "uniform":
             while True:
-                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/2)
+                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/2.0)
                         #random.uniform(1,QUANTUM/8) * 8)
                 yield self.hold(interTime)
 
         elif distribution is "exponential":
             while True:
-                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/2)
+                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/2.0)
                     #random.uniform(1, QUANTUM/8) * 8)
                 yield self.hold(sim.Exponential(interTime).sample())
         
@@ -57,8 +58,8 @@ class flow(sim.Component):
         self.packetSize = size - (size % 8)
         
     def process(self):
-        #if self.fid is 0:
-            #print("Incoming Packet with size:", self.packetSize)
+        if self.fid is 0:
+            print("Incoming Packet with size:", self.packetSize)
 
         for i in range(len(newQueues)):
             if newQueues[i].qid is self.fid:
@@ -105,7 +106,7 @@ class queue(sim.Component):
         self.leave(source)
         self.enter(destination)
         #if self.qid is 0:
-            #print("Moving:", self.qid, "from", source, "to", destination, "length of queue", len(self.queue), "credits", self.credits)
+        print("Moving:", self.qid, "from", source, "to", destination, "length of queue", len(self.queue), "credits", self.credits)
     
     def push(self, component):
         component.enter(self.queue)
@@ -190,7 +191,7 @@ class scheduler(sim.Component):
 
             
             if counter is len(oldQueues) and old:
-                #print("counter reset")
+                print("RR reset")
                 old = False
                 counter = 0
                 self.RRCounter += 1
@@ -223,6 +224,7 @@ passiveQueues = sim.Queue('passiveQueues')
 for _ in range(SPARSEFLOWS + BULKFLOWS + 1):
     queue().enter(passiveQueues)
 
+
 for i in range(0,2*SPARSEFLOWS,2):
     sparseFlowGenerator(fid=i,interTime=time*INTERARRIVALMULTIPLIER, distribution="uniform")
 
@@ -240,7 +242,7 @@ clerk = clerk(process=None)
 
 env.run(till=RUNTIME)
 
-print("interarrival time:", time)
+print("interarrival time:", time*INTERARRIVALMULTIPLIER)
 
 print("Scheduler RR", scheduler.RRCounter)
 
