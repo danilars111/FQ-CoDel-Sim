@@ -9,6 +9,8 @@ MSS = 1500.0 * 8.0
 QUANTUM = MSS + (14.0 * 8.0)
 INTERARRIVALMULTIPLIER = input("Enter interarrivaltime multiplier ")
 RUNTIME = input("Enter simulated runtime: ")
+TRACE = input("Trace?: ")
+old = False
 
 def sparseCalc():
     return ((QUANTUM*(BULKFLOWS + 1)) + (SPARSEFLOWS*QUANTUM/2.0))/BANDWIDTH
@@ -56,11 +58,11 @@ class flow(sim.Component):
     def setup(self, fid, size):
         self.fid = fid
         self.packetSize = size - (size % 8)
-        
     def process(self):
-        if self.fid is 0:
-            print("Incoming Packet with size:", self.packetSize)
-
+        #if self.fid is 0:
+            #print("Incoming Packet with size:", self.packetSize)
+        global old 
+        
         for i in range(len(newQueues)):
             if newQueues[i].qid is self.fid:
                 newQueues[i].push(self)
@@ -74,8 +76,10 @@ class flow(sim.Component):
         for k in range(len(passiveQueues)):
             if passiveQueues[k].qid is self.fid:
                 passiveQueues[k].push(self)
-                passiveQueues[k].move(passiveQueues, newQueues)
-                
+                passiveQueues[k].move(passiveQueues, newQueues) 
+                old = False
+                #print("Flow old:", old)
+
                 if scheduler.ispassive():
                     scheduler.activate()
                 yield self.cancel()
@@ -86,6 +90,9 @@ class flow(sim.Component):
                 passiveQueues[l].qid = self.fid
                 passiveQueues[l].move(passiveQueues, newQueues)
 
+                old = False
+                print("Flow old:", old)
+                
                 if scheduler.ispassive():
                     scheduler.activate()
                 yield self.cancel()
@@ -106,7 +113,7 @@ class queue(sim.Component):
         self.leave(source)
         self.enter(destination)
         #if self.qid is 0:
-        print("Moving:", self.qid, "from", source, "to", destination, "length of queue", len(self.queue), "credits", self.credits)
+        #    print("Moving:", self.qid, "from", source, "to", destination, "length of queue", len(self.queue), "credits", self.credits)
     
     def push(self, component):
         component.enter(self.queue)
@@ -125,36 +132,41 @@ class scheduler(sim.Component):
         self.RRCounter = 0.0
 
     def process(self):
-        old = False 
         counter = 0
+        global old
+        old = False
 
         while True:
-            if newQueues and not old:
-                queue = newQueues[0].queue
+            
+            if not old:
+                if not newQueues:
+                    old = True
+                   # print("Scheduler old:",old)    
+                else:
+                    queue = newQueues[0].queue
                 
-                while newQueues[0].credits > 0 and queue:
-                    #if newQueues[0].qid is 0:
-                        #print("Deducting", queue[0].packetSize, "credits")
-                   # print("Block size", newQueues[0].queue[0].packetSize/8)
+                    while newQueues[0].credits > 0 and queue:
+                        #if newQueues[0].qid is 0:
+                            #print("Deducting", queue[0].packetSize, "credits")
+                    # print("Block size", newQueues[0].queue[0].packetSize/8)
 
-                    newQueues[0].credits -= queue[0].packetSize
+                        newQueues[0].credits -= queue[0].packetSize
                     #print("credits =",newQueues[0].credits/8, "fid:", newQueues[0].qid)
                     
-                    clerk.activate(queue=queue, size=queue[0].packetSize)
-                    yield self.passivate()
+                        clerk.activate(queue=queue, size=queue[0].packetSize)
+                        yield self.passivate()
                 
-                if newQueues[0].credits <= 0:
-                    newQueues[0].credits += QUANTUM
+                    if newQueues[0].credits <= 0:
+                        newQueues[0].credits += QUANTUM
 
                     #if newQueues[0].qid is 0:
                         #print("Adding Quantum")
                     
-                newQueues[0].move(newQueues, oldQueues)
+                    newQueues[0].move(newQueues, oldQueues)
                  
-            elif oldQueues:
+            elif oldQueues and old:
                 queue = oldQueues[0].queue
                  
-                old = True
                 counter += 1
                 if queue:
                     while oldQueues[0].credits > 0 and queue:
@@ -176,9 +188,8 @@ class scheduler(sim.Component):
                 else:
                     oldQueues[0].resetCredits()
                     oldQueues[0].move(oldQueues, passiveQueues)
-                    old = False
                     counter = 0
-                    self.RRCounter += 1
+                    #self.RRCounter += 1
                     
                     for i in range(len(passiveQueues)):
                         passiveQueues[i].sparseIncrease()
@@ -186,13 +197,13 @@ class scheduler(sim.Component):
                     for i in range(len(newQueues)):
                         newQueues[i].sparseIncrease()
             
+
             elif not self.ispassive():
                yield self.passivate()
 
             
             if counter is len(oldQueues) and old:
-                print("RR reset")
-                old = False
+               # print("RR reset")
                 counter = 0
                 self.RRCounter += 1
                 
@@ -208,12 +219,13 @@ class clerk(sim.Component):
     def process(self, queue, size):
         while True:
             queue.pop()
-            yield self.hold(size/BANDWIDTH)
-            scheduler.activate()
+            #print("before hold")
+            scheduler.activate(delay=(size/BANDWIDTH),urgent=True)
             yield self.cancel()
 
 
-env = sim.Environment(random_seed=None)
+env = sim.Environment(trace=TRACE,random_seed=None)
+
 
 scheduler = scheduler()
 
