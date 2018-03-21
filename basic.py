@@ -13,7 +13,7 @@ TRACE = input("Trace?: ")
 old = False
 
 def sparseCalc():
-    return ((QUANTUM*(BULKFLOWS + 1)) + (SPARSEFLOWS*QUANTUM/2.0))/BANDWIDTH
+    return ((QUANTUM*(BULKFLOWS + 1)) + ((SPARSEFLOWS*QUANTUM)/2.0))/BANDWIDTH
 
 
 class sparseFlowGenerator(sim.Component):
@@ -91,7 +91,7 @@ class flow(sim.Component):
                 passiveQueues[l].move(passiveQueues, newQueues)
 
                 old = False
-                print("Flow old:", old)
+                #print("Flow old:", old)
                 
                 if scheduler.ispassive():
                     scheduler.activate()
@@ -187,31 +187,31 @@ class scheduler(sim.Component):
                     oldQueues[0].move(oldQueues, oldQueues)
                 else:
                     oldQueues[0].resetCredits()
+                    oldQueues[0].sparseIncrease()
                     oldQueues[0].move(oldQueues, passiveQueues)
-                    counter = 0
+                    counter -= 1
                     #self.RRCounter += 1
                     
-                    for i in range(len(passiveQueues)):
-                        passiveQueues[i].sparseIncrease()
                 
-                    for i in range(len(newQueues)):
-                        newQueues[i].sparseIncrease()
+                    #for i in range(len(newQueues)):
+                        #newQueues[i].sparseIncrease()
             
 
             elif not self.ispassive():
-               yield self.passivate()
+                yield self.passivate()
 
             
             if counter is len(oldQueues) and old:
-               # print("RR reset")
+                #print("RR reset")
                 counter = 0
                 self.RRCounter += 1
                 
-                for i in range(len(passiveQueues)):
-                    passiveQueues[i].sparseIncrease()
+                if BULKFLOWS > 0 and SPARSEFLOWS <= 1:
+                    for i in range(len(passiveQueues)):
+                        passiveQueues[i].sparseIncrease()
 
-                for i in range(len(newQueues)):
-                    newQueues[i].sparseIncrease()
+                    #for i in range(len(newQueues)):
+                 #   newQueues[i].sparseIncrease()
 
 
 
