@@ -124,13 +124,13 @@ class queue(sim.Component):
     def sparseIncrease(self):
         if self.qid is not UNCLAIMED:
             self.sparseCounter += 1
-            print("increasing sparse for:", self.qid)
+            #print("increasing sparse for:", self.qid)
 
 
 class scheduler(sim.Component):
     def setup(self):
         self.RRCounter = 0.0
-
+        self.thrown = 0
     def process(self):
         counter = 0
         global old
@@ -185,12 +185,13 @@ class scheduler(sim.Component):
                             #print("Adding Quantum")
                     
                     oldQueues[0].move(oldQueues, oldQueues)
-                    print("counter:", counter, "length:", len(oldQueues), old) 
+                    #print("counter:", counter, "length:", len(oldQueues), old) 
                     
                 else:
                     oldQueues[0].resetCredits()
                     oldQueues[0].sparseIncrease()
                     oldQueues[0].move(oldQueues, passiveQueues)
+                    self.thrown += 1
                     #counter -= 1
                     #self.RRCounter += 1
                     old = True
@@ -202,18 +203,17 @@ class scheduler(sim.Component):
             elif not self.ispassive():
                 yield self.passivate()
 
-            print("counter:", counter, "length:", len(oldQueues),old) 
+           # print("counter:", counter, "length:", len(oldQueues),old) 
             if counter is len(oldQueues) and old:
                 counter = 0
                 self.RRCounter += 1
-                print("RR reset", self.RRCounter)
+            #    print("RR reset", self.RRCounter)
                 
-                if BULKFLOWS > 0 and SPARSEFLOWS <= 1:
-                    for i in range(len(passiveQueues)):
-                        passiveQueues[i].sparseIncrease()
+                #if BULKFLOWS > 0 and SPARSEFLOWS <= 1:
+                for i in range(len(passiveQueues) - self.thrown):
+                    passiveQueues[i].sparseIncrease()
 
-                    #for i in range(len(newQueues)):
-                 #   newQueues[i].sparseIncrease()
+                self.thrown = 0
 
 
 
