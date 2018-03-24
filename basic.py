@@ -4,30 +4,43 @@ import random
 UNCLAIMED = -1
 BANDWIDTH = input("Enter bandwidth (Mbps): ") * pow(10,6)
 SPARSEFLOWS = input("Enter number of sparseflows: ")
+SPARSESIZE = input("Enter sparseflow packetsize(Byte): ") * 8.0
 BULKFLOWS = input("Enter number of bulkflows: ")
 MSS = 1500.0 * 8.0
-QUANTUM = MSS + (14.0 * 8.0)
+QUANTUM = MSS + (18.0 * 8.0)
+INTERARRIVALTIME = input("Enter interarrival time(ms): ") * pow(10,-3)
 INTERARRIVALMULTIPLIER = input("Enter interarrivaltime multiplier ")
 RUNTIME = input("Enter simulated runtime: ")
 TRACE = input("Trace?: ")
 old = False
 
 def sparseCalc():
-    return ((QUANTUM*(BULKFLOWS + 1)) + ((SPARSEFLOWS*QUANTUM)/2.0))/BANDWIDTH
+    print("in sparse")
+    if int(SPARSESIZE) is 0:
+        return ((QUANTUM*(BULKFLOWS + 1)) + ((SPARSEFLOWS*QUANTUM)/2.0))/BANDWIDTH
+    
+    else:
+        return ((QUANTUM*(BULKFLOWS + 1)) + (SPARSEFLOWS*SPARSESIZE))/BANDWIDTH
 
 
 class sparseFlowGenerator(sim.Component):
     def process(self,fid, interTime, distribution="uniform"):
-       
+        spSize = 0
+
+        if int(SPARSESIZE) is 0:
+            spSize = QUANTUM/2
+        else:
+            spSize = SPARSESIZE
+
         if distribution is "uniform":
             while True:
-                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/2.0)
+                flow(name='sflow-' + str(fid), fid=fid, size = spSize )
                         #random.uniform(1,QUANTUM/8) * 8)
                 yield self.hold(interTime)
 
         elif distribution is "exponential":
             while True:
-                flow(name='sflow-' + str(fid), fid=fid, size = QUANTUM/2.0)
+                flow(name='sflow-' + str(fid), fid=fid, size = spSize)
                     #random.uniform(1, QUANTUM/8) * 8)
                 yield self.hold(sim.Exponential(interTime).sample())
         
@@ -221,7 +234,6 @@ class clerk(sim.Component):
     def process(self, queue, size):
         while True:
             queue.pop()
-            #print("before hold")
             scheduler.activate(delay=(size/BANDWIDTH),urgent=True)
             yield self.cancel()
 
@@ -230,8 +242,12 @@ env = sim.Environment(trace=TRACE,random_seed=None)
 
 
 scheduler = scheduler()
+print(INTERARRIVALTIME)
+if float(INTERARRIVALTIME) is 0.0:
+    time = sparseCalc()
 
-time = sparseCalc()
+else:
+    time = INTERARRIVALTIME
 
 passiveQueues = sim.Queue('passiveQueues')
 
@@ -269,3 +285,5 @@ for x in range(len(newQueues)):
 for x in range(len(oldQueues)):
     print("Flow id:",oldQueues[x].qid ,"% sparse",  oldQueues[x].sparseCounter/scheduler.RRCounter)
 
+newQueues.print_statistics()
+oldQueues.print_statistics()
