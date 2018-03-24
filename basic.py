@@ -124,7 +124,7 @@ class queue(sim.Component):
     def sparseIncrease(self):
         if self.qid is not UNCLAIMED:
             self.sparseCounter += 1
-            #print("increasing sparse for:", self.qid)
+            print("increasing sparse for:", self.qid)
 
 
 class scheduler(sim.Component):
@@ -163,11 +163,10 @@ class scheduler(sim.Component):
                         #print("Adding Quantum")
                     
                     newQueues[0].move(newQueues, oldQueues)
-                 
+                    counter = 0 
             elif oldQueues and old:
                 queue = oldQueues[0].queue
                  
-                counter += 1
                 if queue:
                     while oldQueues[0].credits > 0 and queue:
                         #if oldQueues[0].qid is 0:
@@ -178,6 +177,7 @@ class scheduler(sim.Component):
                        # print("credits =",oldQueues[0].credits/8), "fid:", oldQueues[0].qid
                         clerk.activate(queue=queue, size=queue[0].packetSize)
                         yield self.passivate()
+                        counter += 1
                         
                     if oldQueues[0].credits <= 0:
                         oldQueues[0].credits += QUANTUM
@@ -185,13 +185,15 @@ class scheduler(sim.Component):
                             #print("Adding Quantum")
                     
                     oldQueues[0].move(oldQueues, oldQueues)
+                    print("counter:", counter, "length:", len(oldQueues), old) 
+                    
                 else:
                     oldQueues[0].resetCredits()
                     oldQueues[0].sparseIncrease()
                     oldQueues[0].move(oldQueues, passiveQueues)
-                    counter -= 1
+                    #counter -= 1
                     #self.RRCounter += 1
-                    
+                    old = True
                 
                     #for i in range(len(newQueues)):
                         #newQueues[i].sparseIncrease()
@@ -200,11 +202,11 @@ class scheduler(sim.Component):
             elif not self.ispassive():
                 yield self.passivate()
 
-            
+            print("counter:", counter, "length:", len(oldQueues),old) 
             if counter is len(oldQueues) and old:
-                #print("RR reset")
                 counter = 0
                 self.RRCounter += 1
+                print("RR reset", self.RRCounter)
                 
                 if BULKFLOWS > 0 and SPARSEFLOWS <= 1:
                     for i in range(len(passiveQueues)):
