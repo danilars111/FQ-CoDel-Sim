@@ -25,7 +25,7 @@ def sparseCalc():
 
 class sparseFlowGenerator(sim.Component):
     def process(self,fid, interTime, distribution="uniform"):
-        yield self.hold(sim.Exponential((SPARSEFLOWS)/(time*INTERARRIVALMULTIPLIER)).sample()/10000)
+        yield self.hold(sim.Exponential((SPARSEFLOWS)/(time*INTERARRIVALMULTIPLIER)).sample()/1000)
         spSize = 0
 
         if int(SPARSESIZE) is 0:
@@ -269,7 +269,7 @@ for i in range(0,2*SPARSEFLOWS,2):
     sparseFlowGenerator(fid=i,interTime=time*INTERARRIVALMULTIPLIER, distribution="uniform")
 
 for i in range(1,2*BULKFLOWS,2):
-    bulkFlowGenerator(fid=i,interTime=time/4,distribution="uniform")
+    bulkFlowGenerator(fid=i,interTime=time/20,distribution="uniform")
 
 
 
