@@ -15,8 +15,7 @@ TRACE = input("Trace?: ")
 old = False
 
 def sparseCalc():
-    print("in sparse")
-    if int(SPARSESIZE) is 0:
+    if int(SPARSESIZE) == -1 * 8:
         return ((QUANTUM*(BULKFLOWS + 1)) + ((SPARSEFLOWS*QUANTUM)/2.0))/BANDWIDTH
     
     else:
@@ -25,10 +24,11 @@ def sparseCalc():
 
 class sparseFlowGenerator(sim.Component):
     def process(self,fid, interTime, distribution="uniform"):
-        yield self.hold(sim.Exponential((SPARSEFLOWS)/(time*INTERARRIVALMULTIPLIER)).sample()/1000)
+        #print("hold time: ",interTime/SPARSEFLOWS)
+        yield self.hold(sim.Exponential(interTime/SPARSEFLOWS).sample())
         spSize = 0
-
-        if int(SPARSESIZE) is 0:
+        
+        if int(SPARSESIZE) == -1 * 8:
             spSize = QUANTUM/2
         else:
             spSize = SPARSESIZE
@@ -70,11 +70,11 @@ class flow(sim.Component):
     def setup(self, fid, size):
         self.fid = fid
         self.packetSize = size - (size % 8)
+        self.timeOfArrival = env.now()
+        self.timeOfRemoval = 0.0
+
     def process(self):
-        #if self.fid is 0:
-            #print("Incoming Packet with size:", self.packetSize)
         global old 
-        
         for i in range(len(newQueues)):
             if newQueues[i].qid is self.fid:
                 newQueues[i].push(self)
@@ -83,6 +83,7 @@ class flow(sim.Component):
 
         for j in range(len(oldQueues)):
             if oldQueues[j].qid is self.fid:
+               # print("Flow: ",oldQueues[j].qid,"enter in old")
                 oldQueues[j].push(self)
                 oldQueues[j].packetCounter += 1
                 yield self.cancel()
@@ -92,9 +93,9 @@ class flow(sim.Component):
                 passiveQueues[k].push(self)
                 passiveQueues[k].packetCounter += 1
                 passiveQueues[k].activateCounter += 1
+                #print("Flow:",passiveQueues[k].qid,"activate ++")
                 passiveQueues[k].move(passiveQueues, newQueues) 
                 old = False
-                #print("Flow old:", old)
 
                 if scheduler.ispassive():
                     scheduler.activate()
@@ -109,7 +110,6 @@ class flow(sim.Component):
                 passiveQueues[l].move(passiveQueues, newQueues)
 
                 old = False
-                #print("Flow old:", old)
                 
                 if scheduler.ispassive():
                     scheduler.activate()
@@ -117,7 +117,9 @@ class flow(sim.Component):
 
         print("No available queues\n")
         yield self.cancel()
-
+        
+    def timeInQueue(self):
+        return (self.timeOfRemoval - self.timeOfArrival)
 
 class queue(sim.Component):
     def setup(self):
@@ -127,12 +129,11 @@ class queue(sim.Component):
         self.qid = UNCLAIMED
         self.packetCounter = 0.0
         self.activateCounter = 0.0
+        self.totalQueueDelay = 0.0
 
     def move(self, source, destination):
         self.leave(source)
         self.enter(destination)
-        #if self.qid is 0:
-        #    print("Moving:", self.qid, "from", source, "to", destination, "length of queue", len(self.queue), "credits", self.credits)
     
     def push(self, component):
         component.enter(self.queue)
@@ -140,16 +141,13 @@ class queue(sim.Component):
     def resetCredits(self):
         self.credits = QUANTUM
 
-    def sparseIncrease(self):
-        if self.qid is not UNCLAIMED:
-            self.sparseCounter += 1
-            #print("increasing sparse for:", self.qid)
+    def addDelay(self):
+        self.queue[0].timeOfRemoval = env.now()
+        self.totalQueueDelay += self.queue[0].timeInQueue()
+   # def sparseIncrease(self):
 
 
 class scheduler(sim.Component):
-    def setup(self):
-        self.RRCounter = 0.0
-        self.thrown = 0
     def process(self):
         counter = 0
         global old
@@ -168,7 +166,7 @@ class scheduler(sim.Component):
 
                         newQueues[0].credits -= queue[0].packetSize
                     
-                        clerk.activate(queue=queue, size=queue[0].packetSize)
+                        clerk.activate(queue=newQueues[0], size=queue[0].packetSize)
                         yield self.passivate()
                 
                     if newQueues[0].credits <= 0:
@@ -176,7 +174,8 @@ class scheduler(sim.Component):
 
                     
                     newQueues[0].move(newQueues, oldQueues)
-                    counter = 0 
+                    counter = 0
+
             elif oldQueues and old:
                 queue = oldQueues[0].queue
                  
@@ -184,7 +183,7 @@ class scheduler(sim.Component):
                     while oldQueues[0].credits > 0 and queue:
                         
                         oldQueues[0].credits -= queue[0].packetSize
-                        clerk.activate(queue=queue, size=queue[0].packetSize)
+                        clerk.activate(queue=oldQueues[0], size=queue[0].packetSize)
                         yield self.passivate()
                         counter += 1
                         
@@ -195,7 +194,6 @@ class scheduler(sim.Component):
                     
                 else:
                     oldQueues[0].resetCredits()
-                    oldQueues[0].sparseIncrease()
                     oldQueues[0].move(oldQueues, passiveQueues)
                     old = True
                 
@@ -204,7 +202,7 @@ class scheduler(sim.Component):
             elif not self.ispassive():
                 yield self.passivate()
 
-            if counter is len(oldQueues) and old:
+            if counter == len(oldQueues) and old:
                 counter = 0
                 
 
@@ -213,8 +211,9 @@ class scheduler(sim.Component):
 class clerk(sim.Component):
     def process(self, queue, size):
         while True:
-            queue.pop()
-            scheduler.activate(delay=(size/BANDWIDTH),urgent=True)
+            queue.addDelay()
+            queue.queue.pop()
+            scheduler.activate(delay=(size/BANDWIDTH))
             yield self.cancel()
 
 
@@ -223,7 +222,7 @@ env = sim.Environment(trace=TRACE,random_seed=None)
 
 scheduler = scheduler()
 
-if int(INTERARRIVALTIME * 1000) is -1:
+if int(INTERARRIVALTIME * 1000) == -1:
     time = sparseCalc()
 
 else:
@@ -255,19 +254,17 @@ env.run(till=RUNTIME)
 
 print("interarrival time:", time*INTERARRIVALMULTIPLIER)
 
-print("Scheduler RR", scheduler.RRCounter)
-
 for x in range(len(passiveQueues)):
-    if int(passiveQueues[x].packetCounter) is 0:
+    if int(passiveQueues[x].packetCounter) == 0:
         print("Did not activate")
         continue
-    print("Flow id:",passiveQueues[x].qid , "% RR",  passiveQueues[x].sparseCounter/scheduler.RRCounter, "% sparse", passiveQueues[x].activateCounter/passiveQueues[x].packetCounter)
+    print("Flow id:",passiveQueues[x].qid , "% sparse", passiveQueues[x].activateCounter/passiveQueues[x].packetCounter, passiveQueues[x].activateCounter, passiveQueues[x].packetCounter, "Time in queue per packet: ", passiveQueues[x].totalQueueDelay/passiveQueues[x].packetCounter)
 
 for x in range(len(newQueues)):
-    print("Flow id:",newQueues[x].qid ,"% RR",  newQueues[x].sparseCounter/scheduler.RRCounter, "% sparse", newQueues[x].activateCounter/newQueues[x].packetCounter)
+    print("Flow id:",newQueues[x].qid , "% sparse", newQueues[x].activateCounter/newQueues[x].packetCounter, newQueues[x].activateCounter, newQueues[x].packetCounter, "Time in queue per packet: ", newQueues[x].totalQueueDelay/newQueues[x].packetCounter)
 
 for x in range(len(oldQueues)):
-    print("Flow id:",oldQueues[x].qid ,"% RR",  oldQueues[x].sparseCounter/scheduler.RRCounter, "% sparse", oldQueues[x].activateCounter/oldQueues[x].packetCounter)
+    print("Flow id:",oldQueues[x].qid , "% sparse", oldQueues[x].activateCounter/oldQueues[x].packetCounter, oldQueues[x].activateCounter, oldQueues[x].packetCounter, "Time in queue per packet: ", oldQueues[x].totalQueueDelay/oldQueues[x].packetCounter)
 
 newQueues.print_statistics()
 oldQueues.print_statistics()
