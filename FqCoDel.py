@@ -119,13 +119,15 @@ class flow(sim.Component):
         yield self.cancel()
         
     def timeInQueue(self):
+        #print(self.timeOfRemoval - self.timeOfArrival)
+
         return (self.timeOfRemoval - self.timeOfArrival)
 
 class queue(sim.Component):
     def setup(self):
         self.queue = sim.Queue()
         self.credits = QUANTUM
-        self.new = True
+        self.sparse = False
         self.qid = UNCLAIMED
         self.packetCounter = 0.0
         self.activateCounter = 0.0
@@ -144,7 +146,8 @@ class queue(sim.Component):
     def addDelay(self):
         self.queue[0].timeOfRemoval = env.now()
         self.totalQueueDelay += self.queue[0].timeInQueue()
-   # def sparseIncrease(self):
+       # print("Flow: ",self.qid,"Delay: ",self.totalQueueDelay)
+  # def sparseIncrease(self):
 
 
 class scheduler(sim.Component):
@@ -232,7 +235,7 @@ print(time)
 passiveQueues = sim.Queue('passiveQueues')
 
 for _ in range(SPARSEFLOWS + BULKFLOWS):
-    queue().enter(passiveQueues)
+        queue().enter(passiveQueues)
 
 
 for i in range(0,2*SPARSEFLOWS,2):
@@ -252,19 +255,33 @@ clerk = clerk(process=None)
 
 env.run(till=RUNTIME)
 
+averageWaitingTime = 0.0
+
 print("interarrival time:", time*INTERARRIVALMULTIPLIER)
 
 for x in range(len(passiveQueues)):
     if int(passiveQueues[x].packetCounter) == 0:
         print("Did not activate")
         continue
-    print("Flow id:",passiveQueues[x].qid , "% sparse", passiveQueues[x].activateCounter/passiveQueues[x].packetCounter, passiveQueues[x].activateCounter, passiveQueues[x].packetCounter, "Time in queue per packet: ", passiveQueues[x].totalQueueDelay/passiveQueues[x].packetCounter)
+    print("Flow id:",passiveQueues[x].qid , "% sparse", passiveQueues[x].activateCounter/passiveQueues[x].packetCounter, "Time: ", passiveQueues[x].totalQueueDelay/passiveQueues[x].packetCounter)
+    
+    if passiveQueues[x].qid % 2 == 0:
+        averageWaitingTime += passiveQueues[x].totalQueueDelay/(passiveQueues[x].packetCounter + 1)
+
 
 for x in range(len(newQueues)):
-    print("Flow id:",newQueues[x].qid , "% sparse", newQueues[x].activateCounter/newQueues[x].packetCounter, newQueues[x].activateCounter, newQueues[x].packetCounter, "Time in queue per packet: ", newQueues[x].totalQueueDelay/newQueues[x].packetCounter)
+    print("Flow id:",newQueues[x].qid , "% sparse", newQueues[x].activateCounter/newQueues[x].packetCounter, "Time: ", newQueues[x].totalQueueDelay/newQueues[x].packetCounter)
+
+    if newQueues[x].qid % 2 == 0:
+        averageWaitingTime += newQueues[x].totalQueueDelay/(newQueues[x].packetCounter + 1)
 
 for x in range(len(oldQueues)):
-    print("Flow id:",oldQueues[x].qid , "% sparse", oldQueues[x].activateCounter/oldQueues[x].packetCounter, oldQueues[x].activateCounter, oldQueues[x].packetCounter, "Time in queue per packet: ", oldQueues[x].totalQueueDelay/oldQueues[x].packetCounter)
+    print("Flow id:",oldQueues[x].qid , "% sparse", oldQueues[x].activateCounter/oldQueues[x].packetCounter, "Time: ", oldQueues[x].totalQueueDelay/oldQueues[x].packetCounter)
 
-newQueues.print_statistics()
-oldQueues.print_statistics()
+    if oldQueues[x].qid % 2 == 0:
+        averageWaitingTime += oldQueues[x].totalQueueDelay/(oldQueues[x].packetCounter + 1)
+
+print("Average waiting time for a sparseflow: ", averageWaitingTime/SPARSEFLOWS)
+
+#newQueues.print_statistics()
+#oldQueues.print_statistics()
