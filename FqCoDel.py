@@ -25,7 +25,8 @@ def sparseCalc():
 class sparseFlowGenerator(sim.Component):
     def process(self,fid, interTime, distribution="uniform"):
         #print("hold time: ",interTime/SPARSEFLOWS)
-        yield self.hold(sim.Exponential(interTime/SPARSEFLOWS).sample())
+        yield self.hold(sim.Uniform(0,interTime*1000).sample()/1000)
+        yield self.hold(sim.Exponential(time/SPARSEFLOWS).sample())
         spSize = 0
         
         if int(SPARSESIZE) == -1 * 8:
@@ -238,9 +239,9 @@ for _ in range(SPARSEFLOWS + BULKFLOWS):
         queue().enter(passiveQueues)
 
 
-for i in range(0,2*SPARSEFLOWS,2):
+for i in range(0,2*SPARSEFLOWS,2):               
     sparseFlowGenerator(fid=i,interTime=time*INTERARRIVALMULTIPLIER, distribution="uniform")
-
+        
 for i in range(1,2*BULKFLOWS,2):
     bulkFlowGenerator(fid=i,interTime=time/20,distribution="uniform")
 
@@ -266,20 +267,20 @@ for x in range(len(passiveQueues)):
     print("Flow id:",passiveQueues[x].qid , "% sparse", passiveQueues[x].activateCounter/passiveQueues[x].packetCounter, "Time: ", passiveQueues[x].totalQueueDelay/passiveQueues[x].packetCounter)
     
     if passiveQueues[x].qid % 2 == 0:
-        averageWaitingTime += passiveQueues[x].totalQueueDelay/(passiveQueues[x].packetCounter + 1)
+        averageWaitingTime += passiveQueues[x].totalQueueDelay/passiveQueues[x].packetCounter
 
 
 for x in range(len(newQueues)):
     print("Flow id:",newQueues[x].qid , "% sparse", newQueues[x].activateCounter/newQueues[x].packetCounter, "Time: ", newQueues[x].totalQueueDelay/newQueues[x].packetCounter)
 
     if newQueues[x].qid % 2 == 0:
-        averageWaitingTime += newQueues[x].totalQueueDelay/(newQueues[x].packetCounter + 1)
+        averageWaitingTime += newQueues[x].totalQueueDelay/newQueues[x].packetCounter 
 
 for x in range(len(oldQueues)):
     print("Flow id:",oldQueues[x].qid , "% sparse", oldQueues[x].activateCounter/oldQueues[x].packetCounter, "Time: ", oldQueues[x].totalQueueDelay/oldQueues[x].packetCounter)
 
     if oldQueues[x].qid % 2 == 0:
-        averageWaitingTime += oldQueues[x].totalQueueDelay/(oldQueues[x].packetCounter + 1)
+        averageWaitingTime += oldQueues[x].totalQueueDelay/oldQueues[x].packetCounter
 
 print("Average waiting time for a sparseflow: ", averageWaitingTime/SPARSEFLOWS)
 
