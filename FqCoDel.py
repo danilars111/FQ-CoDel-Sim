@@ -26,7 +26,7 @@ class sparseFlowGenerator(sim.Component):
     def process(self,fid, interTime, distribution="uniform"):
         #print("hold time: ",interTime/SPARSEFLOWS)
         yield self.hold(sim.Uniform(0,(interTime*1000) - 1).sample()/1000)
-        yield self.hold(sim.Exponential(time/SPARSEFLOWS).sample())
+        yield self.hold(sim.Exponential(interTime/SPARSEFLOWS).sample())
         spSize = 0
         
         if int(SPARSESIZE) == -1 * 8:
