@@ -70,7 +70,7 @@ The last thing in the output is the average waiting time for a flow
 
 ## Built With
 
-* [Salabim](http://www.salabim.org/manual/index.html#) - The simulator framework
+* [Salabim](http://www.salabim.org/manual/index.html#) - The simulator library
 
 
 
