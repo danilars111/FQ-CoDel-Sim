@@ -14,7 +14,9 @@ Python 2.7:
 If it is not already installed you can install it by typing
 
 sudo add-apt-repository ppa:fkrull/deadsnakes-python2.7
+
 sudo apt-get update 
+
 sudo apt-get install python2.7
 
 in the terminal. 
