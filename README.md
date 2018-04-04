@@ -23,9 +23,9 @@ in the terminal.
 
 If a newer version of python is prefered we can't garuantee that the code works as intended. 
 
-Salabim framework:
+Salabim library:
 
-Use pip to install the Salabim framework by typing
+Use pip to install the Salabim library by typing
 
 **pip install salabim**
 
