@@ -1,4 +1,4 @@
-# Simulator of FQ-CoDel 
+# FQ-CoDel simulator
 
 This simulator was written as a project at Karlstad University. The program simulates the behaviour of the FQ-CoDel algorithm in different scenarios. 
 The simulator was used to obtain queueing latency aswell as percentage value of how often a flow got the sparseflow treatment, this was done for a different number of scenarios. 
