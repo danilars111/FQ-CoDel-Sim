@@ -3,12 +3,12 @@
 This simulator was written as a project at Karlstad University. The program simulates the behaviour of the FQ-CoDel algorithm in different scenarios. 
 The simulator was used to obtain queueing latency aswell as percentage value of how often a flow got the sparseflow treatment, this was done for a different number of scenarios. 
 The scenarios is fully customizable by the user and everything from bandwidth to packetsize can be changed between the runs. Simulation results in
-both table and graph form can be found in [INSERT REPORT HERE].
+both table and graph form can be found in [FqCoDel.pdf](FqCoDel.pdf).
 
 
 ### Prerequisites
 
-The program have only been tested on a virtual machine running Ubuntu [SOME VERSION] so we can't garuantee that it works on any other OS. 
+The program have only been tested on a virtual machine running Ubuntu 17.04 so we can't garuantee that it works on any other OS. 
 
 Python 2.7:
 If it is not already installed you can install it by typing
