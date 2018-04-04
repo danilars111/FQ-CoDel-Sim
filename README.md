@@ -75,8 +75,8 @@ The last thing in the output is the average waiting time for a flow
 
 ## Authors
 
-* **Daniel Larsson** - *Main developer* - [E-mail](daniellarsson054@gmail.com)
-* **Martin Wahlberg** - *Main developer* -[E-mail](martin_p95@hotmail.com)
+* **Daniel Larsson** - *Main developer* - *Email: daniellarsson054@gmail.com*
+* **Martin Wahlberg** - *Main developer* -*Email: martin_p95@hotmail.com*
 
 
 
@@ -86,6 +86,5 @@ This project is licensed under the GNU GPL License - see the [LICENSE.md](LICENS
 
 ## Acknowledgments
 
-* Hat tip to anyone who's code was used
-* Inspiration
-* etc
+* **Johan Garcia** - *Supervisor*
+* **Toke Høiland-Jørgensen** - *Supervisor*
