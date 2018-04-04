@@ -247,7 +247,7 @@ for _ in range(SPARSEFLOWS + BULKFLOWS):
 gen = genFlow(waitTime=time)
         
 for i in range(1,2*BULKFLOWS,2):
-    bulkFlowGenerator(fid=i,interTime=time/20,distribution="uniform")
+    bulkFlowGenerator(fid=i,interTime=((QUANTUM/BANDWIDTH)-(1.0/BANDWIDTH)),distribution="uniform")
 
 
 
