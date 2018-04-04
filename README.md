@@ -27,7 +27,7 @@ Salabim framework:
 
 Use pip to install the Salabim framework by typing
 
-pip install salabim 
+**pip install salabim**
 
 in the terminal. 
 
