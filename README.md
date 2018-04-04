@@ -35,7 +35,7 @@ in the terminal.
 
 Type
 
-python [INSERT FILENNAME HERE] 
+**python FQCoDelSim.py** 
 
 in the terminal and follow these instructions.
  
