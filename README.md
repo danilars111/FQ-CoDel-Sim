@@ -1,8 +1,8 @@
 # FQ-CoDel simulator
 
-This simulator was written as a project at Karlstad University. The program simulates the behaviour of the FQ-CoDel algorithm in different scenarios. 
-The simulator was used to obtain queueing latency aswell as percentage value of how often a flow got the sparseflow treatment, this was done for a different number of scenarios. 
-The scenarios is fully customizable by the user and everything from bandwidth to packetsize can be changed between the runs. Simulation results in
+This simulator was written as a project at Karlstad University in Sweden. The program simulates the behaviour of the FQ-CoDel algorithm in different scenarios. 
+The simulator is used to obtain queueing latency aswell as a percentage value of how often a flow get the sparseflow treatment, this can be done for many different scenarios. 
+The scenarios is fully customizable by the user and everything from bandwidth to packetsize can be changed between the runs. Results from different simulation runs in 
 both table and graph form can be found in [FqCoDel.pdf](FqCoDel.pdf).
 
 
@@ -63,9 +63,6 @@ For each flow the "sparseness percent", which is the percentage of packages that
 The average waiting time for a packet in the particular flow is also given. 
 
 The last thing in the output is the average waiting time for a flow
-
-
-
 
 
 ## Built With
