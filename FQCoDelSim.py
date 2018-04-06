@@ -110,7 +110,7 @@ class flowGenerator(sim.Component):
         yield self.hold((BULKFLOWS*QUANTUM)/BANDWIDTH)
 
         for i in range(0,2*SPARSEFLOWS,2):               
-            sparsePacketGenerator(pid=i,interTime=time*INTERARRIVALMULTIPLIER, distribution="uniform")
+            sparsePacketGenerator(pid=i,interTime=waitTime*INTERARRIVALMULTIPLIER, distribution="uniform")
             yield self.hold(sim.Exponential(waitTime/SPARSEFLOWS).sample())
 
 
