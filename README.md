@@ -1,10 +1,19 @@
-# FQ-CoDel simulator
+# FQ-CoDel spareflow optimisation simulator
 
-This simulator was written as a project at Karlstad University in Sweden. The program simulates the behaviour of the FQ-CoDel algorithm in different scenarios. 
+This simulator was written as a project at Karlstad University in Sweden. The program simulates the behaviour of the FQ-CoDel sparseflow optimisation algorithm in different scenarios. 
 The simulator is used to obtain queueing latency aswell as a percentage value of how often a flow get the sparseflow treatment, this can be done for many different scenarios. 
 The scenarios is fully customizable by the user and everything from bandwidth to packetsize can be changed between the runs. Results from different simulation runs in 
 both table and graph form can be found in [FqCoDel.pdf](FqCoDel.pdf).
 
+
+
+### Simplifications 
+Since we are only interested in simulating the behaviour of the sparseflow optimisation mechanism the following simplifications was made. 
+
+* No hashing of the flows - Since hashcollisions is very rare we assume that each individual flow receives their own queue
+
+* Unlimited queues - Since we are interested in the sparseflow optimisation mechanism there is no need to care about dropping packets. The bulkflows should 
+always have packets in the queue and the sparseflows should never have to drop a packet. If a sparseflow would have to drop a packet it wouldn't be classified as sparse anyaway. 
 
 ### Prerequisites
 
