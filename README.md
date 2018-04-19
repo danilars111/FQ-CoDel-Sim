@@ -1,4 +1,4 @@
-# FQ-CoDel spareflow optimisation simulator
+# FQ-CoDel sparseflow optimisation simulator
 
 This simulator was written as a project at Karlstad University in Sweden. The program simulates the behaviour of the FQ-CoDel sparseflow optimisation algorithm in different scenarios. 
 The simulator is used to obtain queueing latency aswell as a percentage value of how often a flow get the sparseflow treatment, this can be done for many different scenarios. 
@@ -63,6 +63,9 @@ use built in function
 **Interarrival multiplier** - Type the multiplier to the interarrival time. E.g if you want 2x the interarrival time type a "2".
 
 **Runtime** - Type the number of seconds you want to simulate. E.g type "100" if you want to simulate 100 seconds
+
+**Detailed output** - Type 1 for a more detailed output that includes how many packets (in %) that get the sparseflow treatment, the average queueing time for a packet in that flow and the average 
+waiting time for all of the flows. Type 0 to just get the average waiting time for all of the flows. 
 
 **Trace** - Type "1" if you want to trace everything or type "0" if you don't. 
 
