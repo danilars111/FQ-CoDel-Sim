@@ -87,7 +87,7 @@ The last thing in the output is the average waiting time for a flow
 ## Authors
 
 * **Daniel Larsson** - *Main developer* - *Email: daniellarsson054@gmail.com*
-* **Martin Wahlberg** - *Main developer* - *Email: martin_p95@hotmail.com*
+* **Martin Wahlberg** - *Main developer* - *Email: martin_p95@hotmail.se*
 
 
 
